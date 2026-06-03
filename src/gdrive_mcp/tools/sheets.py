@@ -18,11 +18,12 @@ def sheets_read(gc: Any, file_id: str, range: str) -> dict:
 
 def sheets_update(gc: Any, file_id: str, range: str, values: list[list]) -> dict:
     ws = gc.open_by_key(file_id).sheet1
-    result = ws.update(range, values)
+    # gspread 6.x: values first, range second
+    result = ws.update(values, range)
     return {"updatedCells": result.get("updatedCells")}
 
 
-def sheets_append(gc: Any, file_id: str, values: list[list]) -> dict:
+def sheets_append(gc: Any, file_id: str, range: str, values: list[list]) -> dict:
     ws = gc.open_by_key(file_id).sheet1
-    result = ws.append_rows(values)
+    result = ws.append_rows(values, table_range=range)
     return {"updates": result.get("updates")}

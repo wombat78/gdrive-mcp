@@ -20,7 +20,7 @@ class GDriveService:
 
     # --- Drive ---
     def drive_list(self, folder_id: str | None = None, query: str | None = None) -> list[dict]:
-        folders = [folder_id] if folder_id else list(self._guard._allowed)
+        folders = [folder_id] if folder_id else list(self._guard.allowed_ids)
         results: list[dict] = []
         for f in folders:
             self._guard.assert_folder_allowed(f)
@@ -36,7 +36,7 @@ class GDriveService:
         self._guard.assert_in_scope(file_id)
         return docs_read(self._clients.docs, file_id)
 
-    def docs_edit(self, file_id: str, ops=None, requests=None) -> dict:
+    def docs_edit(self, file_id: str, ops: list[dict] | None = None, requests: list[dict] | None = None) -> dict:
         self._guard.assert_in_scope(file_id)
         return docs_edit(self._clients.docs, file_id, ops=ops, requests=requests)
 
@@ -53,6 +53,6 @@ class GDriveService:
         self._guard.assert_in_scope(file_id)
         return sheets_update(self._clients.sheets, file_id, range, values)
 
-    def sheets_append(self, file_id: str, values: list[list]) -> dict:
+    def sheets_append(self, file_id: str, range: str, values: list[list]) -> dict:
         self._guard.assert_in_scope(file_id)
-        return sheets_append(self._clients.sheets, file_id, values)
+        return sheets_append(self._clients.sheets, file_id, range, values)

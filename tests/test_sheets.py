@@ -22,13 +22,15 @@ def test_sheets_update_writes_range():
     ws = gc.open_by_key.return_value.sheet1
     ws.update.return_value = {"updatedCells": 4}
     out = sheets_update(gc, "S1", "A1:B2", [["a", "b"], ["1", "2"]])
-    ws.update.assert_called_once_with("A1:B2", [["a", "b"], ["1", "2"]])
+    # gspread 6.x: values first, then range
+    ws.update.assert_called_once_with([["a", "b"], ["1", "2"]], "A1:B2")
     assert out == {"updatedCells": 4}
 
-def test_sheets_append_adds_rows():
+def test_sheets_append_with_range():
+    """sheets_append must accept a range and pass it as table_range (spec §6)."""
     gc = MagicMock()
     ws = gc.open_by_key.return_value.sheet1
     ws.append_rows.return_value = {"updates": {"updatedRows": 2}}
-    out = sheets_append(gc, "S1", [["x"], ["y"]])
-    ws.append_rows.assert_called_once_with([["x"], ["y"]])
+    out = sheets_append(gc, "S1", "A1", [["x"], ["y"]])
+    ws.append_rows.assert_called_once_with([["x"], ["y"]], table_range="A1")
     assert out == {"updates": {"updatedRows": 2}}
