@@ -40,3 +40,7 @@ control**; the server itself does not authenticate callers.
 **Do not expose the port publicly.** Running the server on a routable address
 without a network perimeter (firewall, VPN, service-mesh policy) would allow any
 caller to invoke all enabled tools against the configured Google account.
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).
