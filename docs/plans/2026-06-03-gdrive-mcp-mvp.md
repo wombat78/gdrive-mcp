@@ -1180,10 +1180,9 @@ EXPOSE 8080
 CMD ["gdrive-mcp"]
 ```
 
-- [ ] **Step 3: Verify the image builds**
+- [ ] **Step 3: Do NOT build the image here**
 
-Run: `docker build -t gdrive-mcp:dev .`
-Expected: build succeeds; final image present in `docker images`.
+The Dockerfile is authored but **not** built locally or in CI. Image build + a live, end-to-end run are validated during **Project B**, when the fleet (`solarmatrix/agents` → `mcp/gdrive-mcp/` sidecar, built by `apply.sh` on `hermes-solarmatrix-eu`) packages and runs it against a real service account and shared folder. Nothing to run in this step.
 
 - [ ] **Step 4: Expand the README**
 
