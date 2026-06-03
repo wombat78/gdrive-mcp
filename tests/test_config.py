@@ -34,3 +34,8 @@ def test_missing_folders_raises():
 def test_enabled_tools_default_none_means_all():
     cfg = Config.from_env({"SERVICE_ACCOUNT_JSON": "{}", "ALLOWED_FOLDER_IDS": "a"})
     assert cfg.enabled_tools is None
+
+def test_empty_folder_ids_after_strip_raises():
+    """ALLOWED_FOLDER_IDS with only whitespace/commas (no valid IDs) must raise ConfigError."""
+    with pytest.raises(ConfigError, match="ALLOWED_FOLDER_IDS contains no valid folder IDs"):
+        Config.from_env({"SERVICE_ACCOUNT_JSON": "{}", "ALLOWED_FOLDER_IDS": ", ,"})

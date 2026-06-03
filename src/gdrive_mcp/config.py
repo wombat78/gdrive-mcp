@@ -32,6 +32,8 @@ class Config:
         if not raw_folders:
             raise ConfigError("ALLOWED_FOLDER_IDS is required")
         folders = tuple(f.strip() for f in raw_folders.split(",") if f.strip())
+        if not folders:
+            raise ConfigError("ALLOWED_FOLDER_IDS contains no valid folder IDs")
 
         tools_raw = env.get("ENABLED_TOOLS", "").strip()
         enabled = tuple(t.strip() for t in tools_raw.split(",") if t.strip()) or None
