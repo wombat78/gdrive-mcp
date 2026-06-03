@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Callable, Iterable
 
+_MAX_ANCESTRY_HOPS = 100
+
 
 class OutOfScopeError(Exception):
     """Raised when a target file/folder is outside the allowed folders."""
@@ -11,11 +13,18 @@ class ScopeGuard:
         self._allowed = set(allowed)
         self._get_parents = get_parents
 
+    @property
+    def allowed_ids(self) -> frozenset[str]:
+        """Public read-only view of the allowed folder IDs."""
+        return frozenset(self._allowed)
+
     def _is_in_scope(self, file_id: str) -> bool:
-        # BFS up the parent chain; cap depth to avoid cycles/runaways.
+        # Iterative DFS up the parent chain; cap depth to avoid cycles/runaways.
+        # The seen-check happens BEFORE fetching parents so each node's parents
+        # are fetched at most once.
         seen: set[str] = set()
         frontier = [file_id]
-        for _ in range(50):
+        for _ in range(_MAX_ANCESTRY_HOPS):
             if not frontier:
                 break
             node = frontier.pop()
