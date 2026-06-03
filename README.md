@@ -29,3 +29,14 @@ domain-wide delegation required.
 SERVICE_ACCOUNT_PATH=./sa.json ALLOWED_FOLDER_IDS=<folder-id> gdrive-mcp
 # serves MCP over streamable-HTTP at http://localhost:8080/mcp
 ```
+
+## Security / network model
+
+The MCP endpoint is **unauthenticated HTTP**. This server is designed to run as a
+**per-agent sidecar** on a private, isolated network — each agent gets its own
+instance and no other agent can reach it. That **network isolation is the access
+control**; the server itself does not authenticate callers.
+
+**Do not expose the port publicly.** Running the server on a routable address
+without a network perimeter (firewall, VPN, service-mesh policy) would allow any
+caller to invoke all enabled tools against the configured Google account.
