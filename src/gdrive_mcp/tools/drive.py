@@ -26,6 +26,34 @@ def get_parents(drive: Any, file_id: str) -> list[str]:
     return meta.get("parents", [])
 
 
+def get_file_meta(drive: Any, file_id: str) -> dict:
+    m = (
+        drive.files()
+        .get(fileId=file_id, fields="parents, driveId", supportsAllDrives=True)
+        .execute()
+    )
+    return {"parents": m.get("parents", []), "driveId": m.get("driveId")}
+
+
+def list_shared_with_me(drive: Any, allowed_drive_ids: tuple) -> list[dict]:
+    resp = (
+        drive.files()
+        .list(
+            q="sharedWithMe = true and trashed = false",
+            fields="files(id, name, mimeType, modifiedTime, driveId)",
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+            pageSize=200,
+        )
+        .execute()
+    )
+    allowed = set(allowed_drive_ids)
+    return [
+        {k: f.get(k) for k in ("id", "name", "mimeType", "modifiedTime")}
+        for f in resp.get("files", []) if f.get("driveId") in allowed
+    ]
+
+
 def drive_list(drive: Any, folder_id: str, query: str | None = None) -> list[dict]:
     validate_drive_id(folder_id)
     q = f"'{folder_id}' in parents and trashed = false"

@@ -12,6 +12,7 @@ class ConfigError(Exception):
 class Config:
     service_account_info: dict
     allowed_folder_ids: tuple[str, ...]
+    allowed_drive_ids: tuple[str, ...] = ()
     host: str = "0.0.0.0"
     port: int = 8080
     enabled_tools: tuple[str, ...] | None = None
@@ -29,11 +30,17 @@ class Config:
             raise ConfigError("SERVICE_ACCOUNT_JSON or SERVICE_ACCOUNT_PATH is required")
 
         raw_folders = env.get("ALLOWED_FOLDER_IDS", "").strip()
-        if not raw_folders:
-            raise ConfigError("ALLOWED_FOLDER_IDS is required")
         folders = tuple(f.strip() for f in raw_folders.split(",") if f.strip())
-        if not folders:
+        if raw_folders and not folders:
             raise ConfigError("ALLOWED_FOLDER_IDS contains no valid folder IDs")
+
+        raw_drives = env.get("ALLOWED_DRIVE_IDS", "").strip()
+        drives = tuple(d.strip() for d in raw_drives.split(",") if d.strip())
+        if raw_drives and not drives:
+            raise ConfigError("ALLOWED_DRIVE_IDS contains no valid drive IDs")
+
+        if not folders and not drives:
+            raise ConfigError("ALLOWED_FOLDER_IDS or ALLOWED_DRIVE_IDS is required")
 
         tools_raw = env.get("ENABLED_TOOLS", "").strip()
         enabled = tuple(t.strip() for t in tools_raw.split(",") if t.strip()) or None
@@ -41,6 +48,7 @@ class Config:
         return cls(
             service_account_info=info,
             allowed_folder_ids=folders,
+            allowed_drive_ids=drives,
             host=env.get("GDRIVE_MCP_HOST", "0.0.0.0"),
             port=int(env.get("GDRIVE_MCP_PORT", "8080")),
             enabled_tools=enabled,

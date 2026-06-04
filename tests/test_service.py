@@ -6,9 +6,19 @@ from gdrive_mcp.scope import OutOfScopeError
 def _service(allowed=("M",), parents=None):
     parents = parents or {"D_in": ["M"], "D_out": ["X"]}
     clients = MagicMock()
-    svc = GDriveService(clients, allowed_folder_ids=allowed)
+    svc = GDriveService(clients, allowed_folder_ids=allowed, allowed_drive_ids=())
     # stub parent resolution used by the scope guard
     svc._guard._get_parents = lambda fid: parents.get(fid, [])
+    svc._guard._get_drive_id = lambda fid: None
+    return svc, clients
+
+
+def _svc_drives(allowed_drives=("D1",), drive_of=None, parents=None):
+    drive_of = drive_of or {"in": "D1", "out": "DX"}
+    clients = MagicMock()
+    svc = GDriveService(clients, allowed_folder_ids=(), allowed_drive_ids=allowed_drives)
+    svc._guard._get_drive_id = lambda fid: drive_of.get(fid)
+    svc._guard._get_parents = lambda fid: (parents or {}).get(fid, [])
     return svc, clients
 
 def test_create_into_allowed_folder_ok():
@@ -129,3 +139,26 @@ def test_sheets_append_in_scope_delegates_with_range():
         out = svc.sheets_append(file_id="D_in", range="A1", values=[["x"]])
     mk.assert_called_once_with(svc._clients.sheets, "D_in", "A1", [["x"]])
     assert out == {"updates": {}}
+
+
+# Task 4 — driveId scoping in service
+
+def test_read_in_allowed_drive_ok():
+    svc, _ = _svc_drives()
+    with patch("gdrive_mcp.service.docs_read", return_value={"title": "t", "text": "x"}) as mk:
+        svc.docs_read(file_id="in")
+    mk.assert_called_once()
+
+def test_read_in_foreign_drive_blocked():
+    svc, _ = _svc_drives()
+    with patch("gdrive_mcp.service.docs_read") as mk:
+        with pytest.raises(OutOfScopeError):
+            svc.docs_read(file_id="out")
+    mk.assert_not_called()
+
+def test_drive_list_none_returns_shared_within_allowed_drive():
+    svc, clients = _svc_drives()
+    with patch("gdrive_mcp.service.list_shared_with_me", return_value=[{"id": "a", "name": "Go-to-Market"}]) as mk:
+        out = svc.drive_list(folder_id=None)
+    mk.assert_called_once_with(clients.drive, ("D1",))
+    assert out == [{"id": "a", "name": "Go-to-Market"}]
