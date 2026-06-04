@@ -25,8 +25,17 @@ domain-wide delegation required.
 
 ## Tools
 
-`drive_list`, `docs_create`, `docs_read`, `docs_edit`, `sheets_create`,
-`sheets_read`, `sheets_update`, `sheets_append`.
+| Tool | Description |
+|------|-------------|
+| `drive_list` | List files in an allowed folder or shared drive |
+| `drive_read_file` | Read native/uploaded files (`.md`, `.txt`, `.json`, `.csv`, `.yaml`, etc.) or export Google-native types (Docs→Markdown, Sheets→CSV, Slides→plain text) |
+| `docs_create` | Create a new Google Doc in an allowed folder |
+| `docs_read` | Read a Google Doc via the Docs API |
+| `docs_edit` | Edit a Google Doc (find/replace, insert) |
+| `sheets_create` | Create a new Google Sheet in an allowed folder |
+| `sheets_read` | Read values from a Sheet range |
+| `sheets_update` | Write values to a Sheet range |
+| `sheets_append` | Append rows to a Sheet range |
 
 ## Run
 
