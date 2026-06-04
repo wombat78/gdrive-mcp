@@ -28,7 +28,7 @@ def test_missing_creds_raises():
         Config.from_env({"ALLOWED_FOLDER_IDS": "abc"})
 
 def test_missing_folders_raises():
-    with pytest.raises(ConfigError, match="ALLOWED_FOLDER_IDS"):
+    with pytest.raises(ConfigError, match="ALLOWED_FOLDER_IDS or ALLOWED_DRIVE_IDS"):
         Config.from_env({"SERVICE_ACCOUNT_JSON": "{}"})
 
 def test_enabled_tools_default_none_means_all():
@@ -39,3 +39,23 @@ def test_empty_folder_ids_after_strip_raises():
     """ALLOWED_FOLDER_IDS with only whitespace/commas (no valid IDs) must raise ConfigError."""
     with pytest.raises(ConfigError, match="ALLOWED_FOLDER_IDS contains no valid folder IDs"):
         Config.from_env({"SERVICE_ACCOUNT_JSON": "{}", "ALLOWED_FOLDER_IDS": ", ,"})
+
+
+def test_allowed_drive_ids_parsed():
+    cfg = Config.from_env({"SERVICE_ACCOUNT_JSON": "{}", "ALLOWED_DRIVE_IDS": "D1, D2"})
+    assert cfg.allowed_drive_ids == ("D1", "D2")
+    assert cfg.allowed_folder_ids == ()  # folders optional when drives given
+
+def test_folders_optional_when_drives_present():
+    cfg = Config.from_env({"SERVICE_ACCOUNT_JSON": "{}", "ALLOWED_DRIVE_IDS": "D1"})
+    assert cfg.allowed_drive_ids == ("D1",)
+
+def test_requires_at_least_one_scope():
+    import pytest
+    with pytest.raises(ConfigError, match="ALLOWED_FOLDER_IDS or ALLOWED_DRIVE_IDS"):
+        Config.from_env({"SERVICE_ACCOUNT_JSON": "{}"})
+
+def test_folders_only_still_valid():
+    cfg = Config.from_env({"SERVICE_ACCOUNT_JSON": "{}", "ALLOWED_FOLDER_IDS": "F1"})
+    assert cfg.allowed_folder_ids == ("F1",)
+    assert cfg.allowed_drive_ids == ()
