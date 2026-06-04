@@ -9,10 +9,15 @@ See `docs/specs/` for the design and `docs/plans/` for the build plan.
 | Env var | Required | Meaning |
 |---|---|---|
 | `SERVICE_ACCOUNT_JSON` / `SERVICE_ACCOUNT_PATH` | yes (one) | Service-account credentials (inline JSON or file path) |
-| `ALLOWED_FOLDER_IDS` | yes | Comma-separated Drive folder IDs the server may operate within |
+| `ALLOWED_FOLDER_IDS` | one of the two | Comma-separated Drive folder IDs the server may operate within |
+| `ALLOWED_DRIVE_IDS` | one of the two | Comma-separated Shared Drive IDs; the SA may access any item shared with it that resides in those drives |
 | `GDRIVE_MCP_PORT` | no (8080) | HTTP listen port |
 | `GDRIVE_MCP_HOST` | no (0.0.0.0) | Bind address |
 | `ENABLED_TOOLS` | no (all) | Comma-separated allow-list of tool names |
+
+At least one of `ALLOWED_FOLDER_IDS` or `ALLOWED_DRIVE_IDS` must be set. Both may be set together.
+
+When `ALLOWED_DRIVE_IDS` is set, the SA may access any item shared with it that resides in those Shared Drives; anything outside (personal My Drive, other orgs) is rejected — the anti-injection boundary.
 
 Grant access by sharing the target folder(s) with the service account's email
 (`client_email` in the JSON) as **Contributor** on the Shared Drive. No
@@ -27,6 +32,8 @@ domain-wide delegation required.
 
 ```bash
 SERVICE_ACCOUNT_PATH=./sa.json ALLOWED_FOLDER_IDS=<folder-id> gdrive-mcp
+# or, using a trusted Shared Drive:
+SERVICE_ACCOUNT_PATH=./sa.json ALLOWED_DRIVE_IDS=<drive-id> gdrive-mcp
 # serves MCP over streamable-HTTP at http://localhost:8080/mcp
 ```
 
