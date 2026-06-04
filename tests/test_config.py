@@ -59,3 +59,19 @@ def test_folders_only_still_valid():
     cfg = Config.from_env({"SERVICE_ACCOUNT_JSON": "{}", "ALLOWED_FOLDER_IDS": "F1"})
     assert cfg.allowed_folder_ids == ("F1",)
     assert cfg.allowed_drive_ids == ()
+
+
+def test_empty_drive_ids_after_strip_raises_no_folders():
+    """ALLOWED_DRIVE_IDS with only whitespace/commas (no valid IDs) must raise ConfigError even without folders."""
+    with pytest.raises(ConfigError, match="ALLOWED_DRIVE_IDS contains no valid drive IDs"):
+        Config.from_env({"SERVICE_ACCOUNT_JSON": "{}", "ALLOWED_DRIVE_IDS": ", ,"})
+
+
+def test_empty_drive_ids_after_strip_raises_with_valid_folders():
+    """A mistyped ALLOWED_DRIVE_IDS must surface even when valid folders are present."""
+    with pytest.raises(ConfigError, match="ALLOWED_DRIVE_IDS contains no valid drive IDs"):
+        Config.from_env({
+            "SERVICE_ACCOUNT_JSON": "{}",
+            "ALLOWED_FOLDER_IDS": "F1",
+            "ALLOWED_DRIVE_IDS": ", ,",
+        })

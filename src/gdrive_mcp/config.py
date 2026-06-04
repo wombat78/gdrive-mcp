@@ -36,6 +36,8 @@ class Config:
 
         raw_drives = env.get("ALLOWED_DRIVE_IDS", "").strip()
         drives = tuple(d.strip() for d in raw_drives.split(",") if d.strip())
+        if raw_drives and not drives:
+            raise ConfigError("ALLOWED_DRIVE_IDS contains no valid drive IDs")
 
         if not folders and not drives:
             raise ConfigError("ALLOWED_FOLDER_IDS or ALLOWED_DRIVE_IDS is required")

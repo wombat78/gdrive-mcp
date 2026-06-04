@@ -47,7 +47,7 @@ def test_allowed_ids_property_returns_frozenset():
 
 
 def test_allowed_ids_property_is_public_not_private():
-    """allowed_ids must be accessible as a property; _allowed remains internal."""
+    """allowed_ids must be accessible as a property; _allowed_folders remains internal."""
     g = ScopeGuard(allowed_folder_ids=("M",), allowed_drive_ids=(), get_parents=get_parents, get_drive_id=lambda _id: None)
     assert hasattr(g, "allowed_ids")
     assert g.allowed_ids == frozenset({"M"})
@@ -104,3 +104,12 @@ def test_empty_allowed_drives_never_matches():
     # driveId is D1, but allowed_drives is empty — must fall through to folder rule
     with pytest.raises(OutOfScopeError):
         g.assert_in_scope("x_file")  # not under M either
+
+
+def test_lookup_exception_does_not_grant_access():
+    """If get_drive_id or get_parents raises, assert_in_scope must NOT silently allow — fail closed."""
+    def boom(_id): raise RuntimeError("API error")
+    g = ScopeGuard(allowed_folder_ids=("M",), allowed_drive_ids=("D1",),
+                   get_parents=boom, get_drive_id=boom)
+    with pytest.raises(Exception):   # must NOT return / must not be silently allowed
+        g.assert_in_scope("whatever")

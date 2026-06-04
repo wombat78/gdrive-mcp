@@ -35,6 +35,7 @@ class ScopeGuard:
         # Check driveId rule first: item's drive must be in the trusted set,
         # and the trusted set must be non-empty (fail-closed: empty set never matches).
         drive_id = self._get_drive_id(file_id)
+        # `and self._allowed_drives` is an explicit empty-set/None fail-closed guard: an empty allowed-drives set must never match, even if drive_id happens to be falsy/None.
         if drive_id in self._allowed_drives and self._allowed_drives:
             return True
 
