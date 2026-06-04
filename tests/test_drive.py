@@ -1,6 +1,6 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 import pytest
-from gdrive_mcp.tools.drive import get_parents, drive_list, is_valid_drive_id, validate_drive_id, get_file_meta, list_shared_with_me
+from gdrive_mcp.tools.drive import get_parents, drive_list, is_valid_drive_id, validate_drive_id, get_file_meta, list_shared_with_me, read_file
 
 def _drive_with_get(result):
     drive = MagicMock()
@@ -113,3 +113,134 @@ def test_list_shared_with_me_filters_to_allowed_drives():
     q = drive.files.return_value.list.call_args.kwargs["q"]
     assert "sharedWithMe = true" in q and "trashed = false" in q
     assert drive.files.return_value.list.call_args.kwargs["includeItemsFromAllDrives"] is True
+
+
+# ── read_file tests ──────────────────────────────────────────────────────────
+
+def _drive_read_file_mock(mime_type: str, file_name: str, content, *, is_google=False):
+    """Build a mock Drive client for read_file tests.
+
+    content should be bytes (for get_media) or bytes (for export_media).
+    """
+    drive = MagicMock()
+    # files().get() → meta
+    drive.files.return_value.get.return_value.execute.return_value = {
+        "id": "FILE1",
+        "name": file_name,
+        "mimeType": mime_type,
+    }
+    if is_google:
+        drive.files.return_value.export_media.return_value.execute.return_value = content
+    else:
+        drive.files.return_value.get_media.return_value.execute.return_value = content
+    return drive
+
+
+def test_read_file_native_markdown_returns_text():
+    """A native .md file (text/markdown mimeType) is downloaded via get_media and decoded."""
+    drive = _drive_read_file_mock("text/markdown", "notes.md", b"# Brand Book\nhello")
+    result = read_file(drive, "FILE1")
+    assert result["id"] == "FILE1"
+    assert result["name"] == "notes.md"
+    assert result["mimeType"] == "text/markdown"
+    assert "# Brand Book" in result["text"]
+    assert "hello" in result["text"]
+    # Should have called get_media, not export_media
+    drive.files.return_value.get_media.assert_called_once()
+    drive.files.return_value.export_media.assert_not_called()
+
+
+def test_read_file_native_json_via_extension():
+    """A file with application/octet-stream mimeType but .json extension is decoded as text."""
+    drive = _drive_read_file_mock("application/octet-stream", "config.json", b'{"key": "value"}')
+    result = read_file(drive, "FILE1")
+    assert result["text"] == '{"key": "value"}'
+
+
+def test_read_file_native_json_mime():
+    """A file with application/json mimeType is decoded as text."""
+    drive = _drive_read_file_mock("application/json", "config.json", b'{"key": "value"}')
+    result = read_file(drive, "FILE1")
+    assert '{"key": "value"}' in result["text"]
+
+
+def test_read_file_google_doc_exports_markdown():
+    """A Google Doc is exported via export_media with mimeType text/markdown."""
+    drive = _drive_read_file_mock(
+        "application/vnd.google-apps.document",
+        "My Doc",
+        b"# Heading\nBody text",
+        is_google=True,
+    )
+    result = read_file(drive, "FILE1")
+    assert "# Heading" in result["text"]
+    assert "Body text" in result["text"]
+    # Must use export_media, not get_media
+    drive.files.return_value.export_media.assert_called_once()
+    kw = drive.files.return_value.export_media.call_args.kwargs
+    assert kw["fileId"] == "FILE1"
+    assert kw["mimeType"] == "text/markdown"
+    drive.files.return_value.get_media.assert_not_called()
+
+
+def test_read_file_google_spreadsheet_exports_csv():
+    """A Google Spreadsheet is exported as text/csv."""
+    drive = _drive_read_file_mock(
+        "application/vnd.google-apps.spreadsheet",
+        "Budget",
+        b"col1,col2\n1,2",
+        is_google=True,
+    )
+    result = read_file(drive, "FILE1")
+    assert "col1,col2" in result["text"]
+    kw = drive.files.return_value.export_media.call_args.kwargs
+    assert kw["mimeType"] == "text/csv"
+
+
+def test_read_file_google_presentation_exports_plain():
+    """A Google Presentation is exported as text/plain."""
+    drive = _drive_read_file_mock(
+        "application/vnd.google-apps.presentation",
+        "Deck",
+        b"Slide 1 text",
+        is_google=True,
+    )
+    result = read_file(drive, "FILE1")
+    assert "Slide 1 text" in result["text"]
+    kw = drive.files.return_value.export_media.call_args.kwargs
+    assert kw["mimeType"] == "text/plain"
+
+
+def test_read_file_google_unsupported_type_raises():
+    """An unsupported Google-native type (e.g. form) raises ValueError."""
+    drive = _drive_read_file_mock(
+        "application/vnd.google-apps.form",
+        "Survey",
+        b"",
+        is_google=True,
+    )
+    with pytest.raises(ValueError, match="unsupported Google type"):
+        read_file(drive, "FILE1")
+
+
+def test_read_file_binary_raises():
+    """A binary file (image/png, non-text name) raises ValueError."""
+    drive = _drive_read_file_mock("image/png", "photo.png", b"\x89PNG\r\n\x1a\n")
+    with pytest.raises(ValueError, match="binary file not readable as text"):
+        read_file(drive, "FILE1")
+
+
+def test_read_file_text_returned_as_str_not_re_decoded():
+    """If get_media returns str instead of bytes, it should be returned directly."""
+    drive = _drive_read_file_mock("text/plain", "notes.txt", "already a string")
+    result = read_file(drive, "FILE1")
+    assert result["text"] == "already a string"
+
+
+def test_read_file_truncates_at_1_million_chars():
+    """Text longer than 1_000_000 chars is truncated with a note."""
+    big = b"x" * 1_100_000
+    drive = _drive_read_file_mock("text/plain", "big.txt", big)
+    result = read_file(drive, "FILE1")
+    assert len(result["text"]) <= 1_000_100  # cap + note fits
+    assert "[truncated]" in result["text"] or len(result["text"]) == 1_000_000 or "truncated" in result["text"]

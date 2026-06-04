@@ -162,3 +162,24 @@ def test_drive_list_none_returns_shared_within_allowed_drive():
         out = svc.drive_list(folder_id=None)
     mk.assert_called_once_with(clients.drive, ("D1",))
     assert out == [{"id": "a", "name": "Go-to-Market"}]
+
+
+# ── drive_read_file scope tests ───────────────────────────────────────────────
+
+def test_drive_read_file_out_of_scope_blocked_before_api():
+    """Out-of-scope file_id raises OutOfScopeError; read_file is never called."""
+    svc, _ = _service()
+    with patch("gdrive_mcp.service.read_file") as mk:
+        with pytest.raises(OutOfScopeError):
+            svc.drive_read_file(file_id="D_out")
+    mk.assert_not_called()
+
+
+def test_drive_read_file_in_scope_delegates():
+    """In-scope file_id calls through to read_file and returns its result."""
+    svc, clients = _service()
+    expected = {"id": "D_in", "name": "notes.md", "mimeType": "text/markdown", "text": "# hi"}
+    with patch("gdrive_mcp.service.read_file", return_value=expected) as mk:
+        out = svc.drive_read_file(file_id="D_in")
+    mk.assert_called_once_with(clients.drive, "D_in")
+    assert out == expected
