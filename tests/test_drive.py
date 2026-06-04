@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 import pytest
-from gdrive_mcp.tools.drive import get_parents, drive_list, is_valid_drive_id, validate_drive_id
+from gdrive_mcp.tools.drive import get_parents, drive_list, is_valid_drive_id, validate_drive_id, get_file_meta, list_shared_with_me
 
 def _drive_with_get(result):
     drive = MagicMock()
@@ -84,3 +84,32 @@ def test_is_valid_drive_id_rejects_invalid():
 def test_validate_drive_id_raises_on_bad_input():
     with pytest.raises(ValueError, match="Invalid Drive ID"):
         validate_drive_id("abc' or '1")
+
+
+def test_get_file_meta_returns_parents_and_drive_id():
+    drive = MagicMock()
+    drive.files.return_value.get.return_value.execute.return_value = {"parents": ["P"], "driveId": "D1"}
+    meta = get_file_meta(drive, "f1")
+    assert meta == {"parents": ["P"], "driveId": "D1"}
+    kw = drive.files.return_value.get.call_args.kwargs
+    assert kw["fileId"] == "f1"
+    assert kw["fields"] == "parents, driveId"
+    assert kw["supportsAllDrives"] is True
+
+def test_get_file_meta_missing_keys_defaults():
+    drive = MagicMock()
+    drive.files.return_value.get.return_value.execute.return_value = {}
+    assert get_file_meta(drive, "f1") == {"parents": [], "driveId": None}
+
+def test_list_shared_with_me_filters_to_allowed_drives():
+    drive = MagicMock()
+    drive.files.return_value.list.return_value.execute.return_value = {"files": [
+        {"id": "a", "name": "InDrive", "mimeType": "application/vnd.google-apps.folder", "modifiedTime": "t", "driveId": "D1"},
+        {"id": "b", "name": "Foreign", "mimeType": "application/vnd.google-apps.folder", "modifiedTime": "t", "driveId": "DX"},
+        {"id": "c", "name": "MyDriveShare", "mimeType": "application/pdf", "modifiedTime": "t"},  # no driveId
+    ]}
+    out = list_shared_with_me(drive, allowed_drive_ids=("D1",))
+    assert [f["id"] for f in out] == ["a"]   # only the one in D1
+    q = drive.files.return_value.list.call_args.kwargs["q"]
+    assert "sharedWithMe = true" in q and "trashed = false" in q
+    assert drive.files.return_value.list.call_args.kwargs["includeItemsFromAllDrives"] is True
