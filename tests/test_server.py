@@ -1,12 +1,13 @@
 from unittest.mock import MagicMock
 from gdrive_mcp.server import build_mcp, ALL_TOOL_NAMES
 
-def test_all_eight_tools_registered_by_default():
+def test_all_nine_tools_registered_by_default():
     svc = MagicMock()
     mcp = build_mcp(svc, enabled_tools=None)
     names = {t.name for t in mcp._tool_manager.list_tools()}
     assert names == set(ALL_TOOL_NAMES)
-    assert len(ALL_TOOL_NAMES) == 8
+    assert len(ALL_TOOL_NAMES) == 9
+    assert "drive_read_file" in ALL_TOOL_NAMES
 
 def test_enabled_tools_filters_registration():
     svc = MagicMock()
@@ -58,6 +59,17 @@ def test_sheets_update_values_schema_is_array():
     assert _prop_is_array(values_prop), (
         f"Expected values to have type 'array' (or anyOf array), got: {values_prop!r}"
     )
+
+def test_drive_read_file_delegates_to_service():
+    """drive_read_file tool passes file_id through to service.drive_read_file."""
+    svc = MagicMock()
+    svc.drive_read_file.return_value = {"id": "F1", "name": "notes.md", "mimeType": "text/markdown", "text": "hi"}
+    mcp = build_mcp(svc, enabled_tools=("drive_read_file",))
+    tool = mcp._tool_manager.get_tool("drive_read_file")
+    result = tool.fn(file_id="F1")
+    svc.drive_read_file.assert_called_once_with(file_id="F1")
+    assert result["text"] == "hi"
+
 
 def test_sheets_append_range_param_present():
     """sheets_append must expose a 'range' parameter in the MCP schema."""

@@ -4,7 +4,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 ALL_TOOL_NAMES = (
-    "drive_list",
+    "drive_list", "drive_read_file",
     "docs_create", "docs_read", "docs_edit",
     "sheets_create", "sheets_read", "sheets_update", "sheets_append",
 )
@@ -27,6 +27,9 @@ def build_mcp(service: Any, enabled_tools: tuple[str, ...] | None,
         query: str | None = None,
     ) -> list[dict]:
         return service.drive_list(folder_id=folder_id, query=query)
+
+    def drive_read_file(file_id: str) -> dict:
+        return service.drive_read_file(file_id=file_id)
 
     def docs_create(title: str, folder_id: str) -> dict:
         return service.docs_create(title=title, folder_id=folder_id)
@@ -54,6 +57,7 @@ def build_mcp(service: Any, enabled_tools: tuple[str, ...] | None,
         return service.sheets_append(file_id=file_id, range=range, values=values)
 
     register("drive_list", drive_list)
+    register("drive_read_file", drive_read_file)
     register("docs_create", docs_create)
     register("docs_read", docs_read)
     register("docs_edit", docs_edit)

@@ -3,7 +3,7 @@ from typing import Any
 
 from gdrive_mcp.auth import Clients
 from gdrive_mcp.scope import ScopeGuard
-from gdrive_mcp.tools.drive import get_parents, get_file_meta, drive_list, list_shared_with_me
+from gdrive_mcp.tools.drive import get_parents, get_file_meta, drive_list, list_shared_with_me, read_file
 from gdrive_mcp.tools.docs import docs_create, docs_read, docs_edit
 from gdrive_mcp.tools.sheets import (
     sheets_create, sheets_read, sheets_update, sheets_append,
@@ -36,6 +36,10 @@ class GDriveService:
         if self._guard.allowed_drive_ids:              # trusted drives: dynamic discovery
             results.extend(list_shared_with_me(self._clients.drive, tuple(self._guard.allowed_drive_ids)))
         return results
+
+    def drive_read_file(self, file_id: str) -> dict:
+        self._guard.assert_in_scope(file_id)
+        return read_file(self._clients.drive, file_id)
 
     # --- Docs ---
     def docs_create(self, title: str, folder_id: str) -> dict:
