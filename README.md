@@ -33,9 +33,13 @@ domain-wide delegation required.
 | `docs_read` | Read a Google Doc via the Docs API |
 | `docs_edit` | Edit a Google Doc (find/replace, insert) |
 | `sheets_create` | Create a new Google Sheet in an allowed folder |
-| `sheets_read` | Read values from a Sheet range |
-| `sheets_update` | Write values to a Sheet range |
-| `sheets_append` | Append rows to a Sheet range |
+| `sheets_add_worksheet` | Add a worksheet to an in-scope spreadsheet |
+| `sheets_list_worksheets` | List worksheet titles, IDs, and grid sizes |
+| `sheets_read` | Read values from a Sheet range; optional `worksheet` title or ID |
+| `sheets_update` | Write values to a Sheet range; optional `worksheet` title or ID |
+| `sheets_append` | Append rows to a Sheet range; optional `worksheet` title or ID |
+
+When `worksheet` is omitted, Sheets operations use the first tab for compatibility.
 
 ## Run
 

@@ -7,6 +7,7 @@ from gdrive_mcp.tools.drive import get_parents, get_file_meta, drive_list, list_
 from gdrive_mcp.tools.docs import docs_create, docs_read, docs_edit
 from gdrive_mcp.tools.sheets import (
     sheets_create, sheets_read, sheets_update, sheets_append,
+    sheets_add_worksheet, sheets_list_worksheets,
 )
 
 
@@ -59,14 +60,22 @@ class GDriveService:
         self._guard.assert_folder_allowed(folder_id)
         return sheets_create(self._clients.sheets, title, folder_id)
 
-    def sheets_read(self, file_id: str, range: str) -> dict:
+    def sheets_add_worksheet(self, file_id: str, title: str, rows: int = 1000, cols: int = 26) -> dict:
         self._guard.assert_in_scope(file_id)
-        return sheets_read(self._clients.sheets, file_id, range)
+        return sheets_add_worksheet(self._clients.sheets, file_id, title, rows, cols)
 
-    def sheets_update(self, file_id: str, range: str, values: list[list]) -> dict:
+    def sheets_list_worksheets(self, file_id: str) -> list[dict]:
         self._guard.assert_in_scope(file_id)
-        return sheets_update(self._clients.sheets, file_id, range, values)
+        return sheets_list_worksheets(self._clients.sheets, file_id)
 
-    def sheets_append(self, file_id: str, range: str, values: list[list]) -> dict:
+    def sheets_read(self, file_id: str, range: str, worksheet: str | None = None) -> dict:
         self._guard.assert_in_scope(file_id)
-        return sheets_append(self._clients.sheets, file_id, range, values)
+        return sheets_read(self._clients.sheets, file_id, range, worksheet)
+
+    def sheets_update(self, file_id: str, range: str, values: list[list], worksheet: str | None = None) -> dict:
+        self._guard.assert_in_scope(file_id)
+        return sheets_update(self._clients.sheets, file_id, range, values, worksheet)
+
+    def sheets_append(self, file_id: str, range: str, values: list[list], worksheet: str | None = None) -> dict:
+        self._guard.assert_in_scope(file_id)
+        return sheets_append(self._clients.sheets, file_id, range, values, worksheet)

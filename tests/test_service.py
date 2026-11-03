@@ -137,7 +137,7 @@ def test_sheets_append_in_scope_delegates_with_range():
     svc, _ = _service()
     with patch("gdrive_mcp.service.sheets_append", return_value={"updates": {}}) as mk:
         out = svc.sheets_append(file_id="D_in", range="A1", values=[["x"]])
-    mk.assert_called_once_with(svc._clients.sheets, "D_in", "A1", [["x"]])
+    mk.assert_called_once_with(svc._clients.sheets, "D_in", "A1", [["x"]], None)
     assert out == {"updates": {}}
 
 

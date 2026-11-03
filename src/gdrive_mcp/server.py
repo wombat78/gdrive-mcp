@@ -6,7 +6,7 @@ from mcp.server.fastmcp import FastMCP
 ALL_TOOL_NAMES = (
     "drive_list", "drive_read_file",
     "docs_create", "docs_read", "docs_edit",
-    "sheets_create", "sheets_read", "sheets_update", "sheets_append",
+    "sheets_create", "sheets_read", "sheets_update", "sheets_append", "sheets_add_worksheet", "sheets_list_worksheets",
 )
 
 
@@ -47,14 +47,20 @@ def build_mcp(service: Any, enabled_tools: tuple[str, ...] | None,
     def sheets_create(title: str, folder_id: str) -> dict:
         return service.sheets_create(title=title, folder_id=folder_id)
 
-    def sheets_read(file_id: str, range: str) -> dict:
-        return service.sheets_read(file_id=file_id, range=range)
+    def sheets_add_worksheet(file_id: str, title: str, rows: int = 1000, cols: int = 26) -> dict:
+        return service.sheets_add_worksheet(file_id=file_id, title=title, rows=rows, cols=cols)
 
-    def sheets_update(file_id: str, range: str, values: list[list]) -> dict:
-        return service.sheets_update(file_id=file_id, range=range, values=values)
+    def sheets_list_worksheets(file_id: str) -> list[dict]:
+        return service.sheets_list_worksheets(file_id=file_id)
 
-    def sheets_append(file_id: str, range: str, values: list[list]) -> dict:
-        return service.sheets_append(file_id=file_id, range=range, values=values)
+    def sheets_read(file_id: str, range: str, worksheet: str | None = None) -> dict:
+        return service.sheets_read(file_id=file_id, range=range, worksheet=worksheet)
+
+    def sheets_update(file_id: str, range: str, values: list[list], worksheet: str | None = None) -> dict:
+        return service.sheets_update(file_id=file_id, range=range, values=values, worksheet=worksheet)
+
+    def sheets_append(file_id: str, range: str, values: list[list], worksheet: str | None = None) -> dict:
+        return service.sheets_append(file_id=file_id, range=range, values=values, worksheet=worksheet)
 
     register("drive_list", drive_list)
     register("drive_read_file", drive_read_file)
@@ -62,6 +68,8 @@ def build_mcp(service: Any, enabled_tools: tuple[str, ...] | None,
     register("docs_read", docs_read)
     register("docs_edit", docs_edit)
     register("sheets_create", sheets_create)
+    register("sheets_add_worksheet", sheets_add_worksheet)
+    register("sheets_list_worksheets", sheets_list_worksheets)
     register("sheets_read", sheets_read)
     register("sheets_update", sheets_update)
     register("sheets_append", sheets_append)
