@@ -2,6 +2,8 @@
 
 Service-account-native MCP server for Google Drive, Docs, and Sheets. No domain-wide delegation — access is granted by sharing folders with the service account.
 
+Originally created by [Qianqin](https://github.com/qianqin). See the [original repository](https://github.com/qianqin/gdrive-mcp).
+
 See `docs/specs/` for the design and `docs/plans/` for the build plan.
 
 ## Configuration
